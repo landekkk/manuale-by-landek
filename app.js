@@ -25,8 +25,6 @@ function normalize(s) {
 function showList() {
   viewPdf.style.display = "none";
   viewList.style.display = "";
-  // czyść iframe, żeby nie grało w tle
-  frame.removeAttribute("src");
   pdfTitleEl.textContent = "";
   history.replaceState({ page: "list" }, "", location.pathname + location.search);
 }
