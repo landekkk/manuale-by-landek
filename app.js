@@ -1,4 +1,4 @@
-// app.js — Biblioteka PDF (iOS-friendly, bez iframe)
+// app.js — manuale by Landek (iOS-friendly, panel + systemowy viewer PDF)
 
 const listEl = document.getElementById("list");
 const qEl = document.getElementById("q");
@@ -9,11 +9,14 @@ const reloadBtn = document.getElementById("reload");
 const viewList = document.getElementById("view-list");
 const viewPdf = document.getElementById("view-pdf");
 const backBtn = document.getElementById("back");
+
 const pdfTitleEl = document.getElementById("pdfTitle");
+const openHereBtn = document.getElementById("openHere");
 const openNew = document.getElementById("openNew");
 const download = document.getElementById("download");
 
 let all = [];
+let current = null;
 
 function setStatus(msg) {
   statusEl.textContent = msg || "";
@@ -26,21 +29,36 @@ function normalize(s) {
 function showList() {
   viewPdf.style.display = "none";
   viewList.style.display = "";
+  current = null;
+  // czyścimy hash, żeby po odświeżeniu nie wracało do panelu
+  history.replaceState({ page: "list" }, "", location.pathname + location.search);
+}
+
+function openPdfSameTab(file) {
+  // iOS/PWA: najbardziej przewidywalne zachowanie + działa cofanie
+  window.open(file, "_self");
 }
 
 function showPdfPanel(item) {
-  // Panel zostawiamy tylko jako “szczegóły” + przyciski (bez podglądu iframe)
+  current = item;
+
   viewList.style.display = "none";
   viewPdf.style.display = "";
 
   pdfTitleEl.textContent = item.title;
+
+  // ustaw linki
   openNew.href = item.file;
   download.href = item.file;
-}
 
-function openPdfSameTab(file) {
-  // iOS/PWA: najbardziej przewidywalne dla “cofnij” to _self
-  window.open(file, "_self");
+  // przycisk otwarcia w tej samej karcie
+  openHereBtn.onclick = (e) => {
+    e.preventDefault();
+    openPdfSameTab(item.file);
+  };
+
+  // stan/historia dla przycisku „Wstecz” w panelu
+  history.pushState({ page: "panel", file: item.file }, "", `#panel=${encodeURIComponent(item.file)}`);
 }
 
 function render() {
@@ -66,13 +84,10 @@ function render() {
     a.href = "#";
     a.textContent = item.title;
 
-    // Klik w tytuł: otwieramy PDF w tej samej karcie (systemowy viewer iOS)
+    // Klik: pokazujemy panel, a PDF otwierasz dopiero po kliknięciu "Otwórz"
     a.addEventListener("click", (e) => {
       e.preventDefault();
-      // opcjonalnie: pokazuj panel przez ułamek sekundy (np. gdybyś chciał mieć przyciski)
-      // showPdfPanel(item);
-
-      openPdfSameTab(item.file);
+      showPdfPanel(item);
     });
 
     const badge = document.createElement("span");
@@ -93,29 +108,43 @@ async function loadList({ bypassCache = false } = {}) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const data = await res.json();
-
     all = Array.isArray(data)
       ? data.filter(x => x && typeof x.title === "string" && typeof x.file === "string")
       : [];
 
     render();
     setStatus("");
+
+    restorePanelFromHash();
   } catch (e) {
     setStatus("Nie udało się wczytać pdfs.json. Sprawdź czy plik istnieje i jest poprawnym JSON-em.");
     console.error(e);
   }
 }
 
+function restorePanelFromHash() {
+  const m = location.hash.match(/^#panel=(.+)$/);
+  if (!m) return;
+
+  const file = decodeURIComponent(m[1]);
+  const found = all.find(x => x.file === file);
+  if (found) showPdfPanel(found);
+}
+
 qEl.addEventListener("input", render);
 reloadBtn.addEventListener("click", () => loadList({ bypassCache: true }));
 
-// Wstecz w panelu (jeśli go kiedyś użyjesz)
-backBtn.addEventListener("click", () => showList());
+backBtn.addEventListener("click", () => history.back());
+
+window.addEventListener("popstate", (ev) => {
+  const st = ev.state;
+  if (!st || st.page === "list") showList();
+});
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./sw.js").catch(console.error);
 }
 
-// Na iOS potrafi cachować agresywnie — na start wymuś świeże pdfs.json
+// iOS: agresywny cache — bierz świeże pdfs.json na starcie
+history.replaceState({ page: "list" }, "", location.pathname + location.search);
 loadList({ bypassCache: true });
-
