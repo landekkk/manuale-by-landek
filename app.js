@@ -118,3 +118,4 @@ if ("serviceWorker" in navigator) {
 
 // Na iOS potrafi cachować agresywnie — na start wymuś świeże pdfs.json
 loadList({ bypassCache: true });
+
