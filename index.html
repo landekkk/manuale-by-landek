@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-  <meta name="description" content="manuale by Landek — biblioteka PDF." />
 
   <title>manuale by Landek</title>
 
@@ -20,60 +19,46 @@
   </header>
 
   <main class="container">
-    <!-- Widok listy -->
+    <!-- LISTA PDF -->
     <section class="card" id="view-list">
       <div class="row">
         <input id="q" type="search" placeholder="Szukaj po tytule..." />
-        <button id="reload" type="button" title="Odśwież listę">Odśwież</button>
+        <button id="reload" type="button">Odśwież</button>
       </div>
 
       <div id="meta" class="muted"></div>
       <ul id="list" class="list"></ul>
       <div id="status" class="muted"></div>
 
-      <!-- Kafel pod listą PDF -->
-      <div class="tool-card" id="openTester" role="button" tabindex="0">
-        <div>
-          <div class="tool-title">Tester dymków</div>
-          <div class="muted small">Otwórz w tej samej aplikacji</div>
-        </div>
+      <!-- TESTER DYMków -->
+      <div class="tool-card" id="openTester">
+        <div class="tool-title">Tester dymków</div>
         <span class="chev">→</span>
       </div>
     </section>
 
-    <!-- Panel PDF -->
+    <!-- PANEL PDF -->
     <section class="card" id="view-pdf" style="display:none;">
       <div class="row">
-        <button id="backPdf" type="button">← Wstecz</button>
+        <button id="backPdf">← Wstecz</button>
         <a id="openHere" class="linkbtn" href="#">Otwórz</a>
       </div>
 
       <div class="muted" id="pdfTitle"></div>
-
-      <div class="muted small" style="margin-top:10px;">
-        PDF otworzy się w systemowym podglądzie Safari (najlepiej działa na iOS).
-      </div>
     </section>
 
-    <!-- Widok testera (w tej samej aplikacji) -->
+    <!-- TESTER (iframe) -->
     <section class="card" id="view-tester" style="display:none;">
       <div class="row">
-        <button id="backTester" type="button">← Wstecz</button>
+        <button id="backTester">← Wstecz</button>
       </div>
-
-      <div class="muted" style="margin-bottom:10px;">Tester dymków</div>
 
       <iframe
         id="testerFrame"
         class="web-frame"
         title="Tester dymków"
         loading="lazy"
-        referrerpolicy="no-referrer"
       ></iframe>
-
-      <div class="muted small" style="margin-top:10px;">
-        Jeśli coś się nie ładuje, daj znać — dopasujemy tryb otwierania pod iOS.
-      </div>
     </section>
   </main>
 
