@@ -36,13 +36,23 @@ function showPdf(item) {
   viewPdf.style.display = "";
 
   pdfTitleEl.textContent = item.title;
-  frame.src = item.file;
 
   openNew.href = item.file;
+
+  // iOS: "download" często i tak otworzy podgląd, ale zostawmy atrybut download
   download.href = item.file;
 
-  history.pushState({ page: "pdf", file: item.file, title: item.title }, "", `#pdf=${encodeURIComponent(item.file)}`);
+  // Najważniejsze: otwórz PDF w systemowym viewer Safari (działa dobrze na iOS)
+  // Otwieramy w tej samej karcie, żeby użytkownik mógł wrócić "Wstecz"
+  window.location.href = item.file;
+
+  history.pushState(
+    { page: "pdf", file: item.file, title: item.title },
+    "",
+    `#pdf=${encodeURIComponent(item.file)}`
+  );
 }
+
 
 function render() {
   const q = normalize(qEl.value);
