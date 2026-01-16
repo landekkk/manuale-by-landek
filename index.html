@@ -19,26 +19,46 @@
   </header>
 
   <main class="container">
-    <section class="card">
-      <div class="row">
-        <input id="q" type="search" placeholder="Szukaj po tytule..." />
-        <button id="reload" type="button" title="Odśwież listę">Odśwież</button>
-      </div>
+  <!-- Widok listy -->
+  <section class="card" id="view-list">
+    <div class="row">
+      <input id="q" type="search" placeholder="Szukaj po tytule..." />
+      <button id="reload" type="button" title="Odśwież listę">Odśwież</button>
+    </div>
 
-      <div id="meta" class="muted"></div>
-      <ul id="list" class="list"></ul>
-      <div id="status" class="muted"></div>
-    </section>
+    <div id="meta" class="muted"></div>
+    <ul id="list" class="list"></ul>
+    <div id="status" class="muted"></div>
+  </section>
 
-    <section class="card small">
-      <h2>Jak dodać PDF</h2>
-      <ol>
-        <li>Wrzuć plik do folderu <code>pdfs/</code> w repo.</li>
-        <li>Dopisz go w <code>pdfs.json</code>.</li>
-        <li>Commit → gotowe (na każdym urządzeniu pojawi się automatycznie).</li>
-      </ol>
-    </section>
-  </main>
+  <!-- Widok podglądu PDF -->
+  <section class="card" id="view-pdf" style="display:none;">
+    <div class="row">
+      <button id="back" type="button">← Wstecz</button>
+      <a id="openNew" class="linkbtn" href="#" target="_blank" rel="noopener">Otwórz w nowej karcie</a>
+      <a id="download" class="linkbtn" href="#" download>Pobierz</a>
+    </div>
+
+    <div class="muted" id="pdfTitle"></div>
+
+    <!-- Podgląd PDF -->
+    <iframe id="frame" title="Podgląd PDF" class="pdf-frame"></iframe>
+
+    <div class="muted small" style="margin-top:10px;">
+      Jeśli podgląd nie działa na Twoim telefonie, użyj „Otwórz w nowej karcie”.
+    </div>
+  </section>
+
+  <section class="card small">
+    <h2>Jak dodać PDF</h2>
+    <ol>
+      <li>Wrzuć plik do folderu <code>pdfs/</code> w repo.</li>
+      <li>Dopisz go w <code>pdfs.json</code>.</li>
+      <li>Commit → gotowe.</li>
+    </ol>
+  </section>
+</main>
+
 
   <script src="./app.js"></script>
 </body>
