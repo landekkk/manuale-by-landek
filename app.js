@@ -148,3 +148,4 @@ if ("serviceWorker" in navigator) {
 // iOS: agresywny cache — bierz świeże pdfs.json na starcie
 history.replaceState({ page: "list" }, "", location.pathname + location.search);
 loadList({ bypassCache: true });
+
