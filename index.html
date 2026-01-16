@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#111827" />
-  <meta name="description" content="Manuale by Landek — biblioteka PDF." />
+  <meta name="description" content="manuale by Landek — biblioteka PDF." />
 
   <title>manuale by Landek</title>
 
@@ -32,29 +32,40 @@
       <div id="status" class="muted"></div>
     </section>
 
-    <!-- Panel PDF (ładny, ale bez iframe — iOS lepiej otwiera PDF w systemowym viewerze) -->
+    <!-- Panel PDF (otwierasz PDF dopiero po kliknięciu przycisku) -->
     <section class="card" id="view-pdf" style="display:none;">
-      <div class="row">
+      <div class="row wrap">
         <button id="back" type="button">← Wstecz</button>
+
+        <!-- GŁÓWNY: otwiera PDF w tej samej karcie (żeby działało cofanie) -->
+        <a id="openHere" class="linkbtn" href="#">Otwórz</a>
+
+        <!-- Opcja: nowa karta -->
         <a id="openNew" class="linkbtn" href="#" target="_blank" rel="noopener">Otwórz w nowej karcie</a>
+
+        <!-- iOS często zachowuje się jak „Otwórz”, ale zostawiamy -->
         <a id="download" class="linkbtn" href="#" download>Pobierz</a>
       </div>
 
       <div class="muted" id="pdfTitle"></div>
 
       <div class="muted small" style="margin-top:10px;">
-        Na iOS najlepszy podgląd PDF działa w systemowym viewerze Safari.
-        Jeśli chcesz wrócić do listy, użyj przycisku „← Wstecz” (w aplikacji) albo gestu cofania.
+        Najlepszy podgląd PDF na iOS działa w systemowym viewerze Safari.
       </div>
     </section>
 
-    <section class="card small">
-      <h2>Jak dodać PDF</h2>
-      <ol>
-        <li>Wrzuć plik do folderu <code>pdfs/</code> w repo.</li>
-        <li>Dopisz go w <code>pdfs.json</code>.</li>
-        <li>Commit → gotowe.</li>
-      </ol>
+    <!-- Tester dymków (kafelek pod PDF-ami) -->
+    <section class="card">
+      <div class="tools">
+        <div>
+          <div class="tool-title">Tester dymków</div>
+          <div class="muted small">Otwórz aplikację testera</div>
+        </div>
+
+        <a class="linkbtn" href="https://landekkk.github.io/tester-dymkow-pwa/" target="_blank" rel="noopener">
+          Uruchom
+        </a>
+      </div>
     </section>
   </main>
 
