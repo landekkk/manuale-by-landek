@@ -4,6 +4,14 @@ const metaEl = document.getElementById("meta");
 const statusEl = document.getElementById("status");
 const reloadBtn = document.getElementById("reload");
 
+const viewList = document.getElementById("view-list");
+const viewPdf = document.getElementById("view-pdf");
+const backBtn = document.getElementById("back");
+const frame = document.getElementById("frame");
+const pdfTitleEl = document.getElementById("pdfTitle");
+const openNew = document.getElementById("openNew");
+const download = document.getElementById("download");
+
 let all = [];
 
 function setStatus(msg) {
@@ -12,6 +20,28 @@ function setStatus(msg) {
 
 function normalize(s) {
   return (s || "").toLowerCase().trim();
+}
+
+function showList() {
+  viewPdf.style.display = "none";
+  viewList.style.display = "";
+  // czyść iframe, żeby nie grało w tle
+  frame.removeAttribute("src");
+  pdfTitleEl.textContent = "";
+  history.replaceState({ page: "list" }, "", location.pathname + location.search);
+}
+
+function showPdf(item) {
+  viewList.style.display = "none";
+  viewPdf.style.display = "";
+
+  pdfTitleEl.textContent = item.title;
+  frame.src = item.file;
+
+  openNew.href = item.file;
+  download.href = item.file;
+
+  history.pushState({ page: "pdf", file: item.file, title: item.title }, "", `#pdf=${encodeURIComponent(item.file)}`);
 }
 
 function render() {
@@ -34,10 +64,12 @@ function render() {
     li.className = "item";
 
     const a = document.createElement("a");
-    a.href = item.file;
-    a.target = "_blank";
-    a.rel = "noopener";
+    a.href = "#";
     a.textContent = item.title;
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      showPdf(item);
+    });
 
     const badge = document.createElement("span");
     badge.className = "badge";
@@ -51,32 +83,49 @@ function render() {
 
 async function loadList({ bypassCache = false } = {}) {
   setStatus("Ładowanie listy…");
-
   try {
     const url = "./pdfs.json" + (bypassCache ? `?t=${Date.now()}` : "");
     const res = await fetch(url, { cache: bypassCache ? "no-store" : "default" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
-    // prosta walidacja
     all = Array.isArray(data)
       ? data.filter(x => x && typeof x.title === "string" && typeof x.file === "string")
       : [];
 
     render();
     setStatus("");
+    restoreFromHash();
   } catch (e) {
     setStatus("Nie udało się wczytać pdfs.json. Sprawdź czy plik istnieje i jest poprawnym JSON-em.");
     console.error(e);
   }
 }
 
+function restoreFromHash() {
+  // Jeżeli ktoś wejdzie bezpośrednio w link z #pdf=...
+  const m = location.hash.match(/^#pdf=(.+)$/);
+  if (!m) return;
+
+  const file = decodeURIComponent(m[1]);
+  const found = all.find(x => x.file === file);
+  if (found) showPdf(found);
+}
+
 qEl.addEventListener("input", render);
 reloadBtn.addEventListener("click", () => loadList({ bypassCache: true }));
+backBtn.addEventListener("click", () => history.back());
 
-// Service worker (offline dla plików apki)
+window.addEventListener("popstate", (ev) => {
+  // Wstecz z PDF → lista
+  const st = ev.state;
+  if (!st || st.page === "list") showList();
+});
+
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./sw.js").catch(console.error);
 }
 
+// start
+history.replaceState({ page: "list" }, "", location.pathname + location.search);
 loadList();
