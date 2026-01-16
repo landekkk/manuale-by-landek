@@ -1,4 +1,4 @@
-// app.js — manuale by Landek (iOS-friendly: panel PDF + wbudowany tester)
+// app.js — manuale by Landek (animacje widoków + wbudowany tester)
 
 const TESTER_URL = "https://landekkk.github.io/tester-dymkow-pwa/";
 
@@ -23,6 +23,7 @@ const testerFrame = document.getElementById("testerFrame");
 
 let all = [];
 let currentPdf = null;
+let activeView = viewList;
 
 function setStatus(msg) {
   statusEl.textContent = msg || "";
@@ -32,27 +33,52 @@ function normalize(s) {
   return (s || "").toLowerCase().trim();
 }
 
-function showOnly(section) {
-  viewList.style.display = section === "list" ? "" : "none";
-  viewPdf.style.display = section === "pdf" ? "" : "none";
-  viewTester.style.display = section === "tester" ? "" : "none";
+function setAriaHidden(el, hidden) {
+  el.setAttribute("aria-hidden", hidden ? "true" : "false");
+}
+
+function switchView(next) {
+  if (next === activeView) return;
+
+  const prev = activeView;
+
+  // przygotuj next
+  next.classList.add("is-active");
+  setAriaHidden(next, false);
+
+  // start animacji next (kolejna klatka)
+  requestAnimationFrame(() => {
+    next.classList.add("is-visible");
+    prev.classList.remove("is-visible");
+  });
+
+  // po animacji chowamy poprzedni
+  const onDone = () => {
+    prev.classList.remove("is-active");
+    setAriaHidden(prev, true);
+    prev.removeEventListener("transitionend", onDone);
+  };
+
+  // jeśli iOS czasem nie odpala transitionend, to i tak „dobij” timeoutem
+  prev.addEventListener("transitionend", onDone);
+  setTimeout(onDone, 260);
+
+  activeView = next;
 }
 
 function showList() {
-  showOnly("list");
+  switchView(viewList);
   currentPdf = null;
   history.replaceState({ page: "list" }, "", location.pathname + location.search);
 }
 
 function openPdfSameTab(file) {
-  // iOS/PWA: najbardziej przewidywalne + działa cofanie
+  // iOS/PWA: przewidywalne + działa cofanie
   window.open(file, "_self");
 }
 
 function showPdfPanel(item) {
   currentPdf = item;
-  showOnly("pdf");
-
   pdfTitleEl.textContent = item.title;
 
   openHereBtn.onclick = (e) => {
@@ -60,15 +86,13 @@ function showPdfPanel(item) {
     openPdfSameTab(item.file);
   };
 
+  switchView(viewPdf);
   history.pushState({ page: "pdf", file: item.file }, "", `#pdf=${encodeURIComponent(item.file)}`);
 }
 
 function showTesterPanel() {
-  showOnly("tester");
-
-  // ustaw src tylko raz (żeby nie przeładowywać bez potrzeby)
   if (!testerFrame.src) testerFrame.src = TESTER_URL;
-
+  switchView(viewTester);
   history.pushState({ page: "tester" }, "", "#tester");
 }
 
@@ -89,7 +113,7 @@ function render() {
 
   for (const item of filtered) {
     const li = document.createElement("li");
-    li.className = "item";
+    li.className = "item pressable";
 
     const a = document.createElement("a");
     a.href = "#";
@@ -137,10 +161,8 @@ function restoreFromHash() {
     showTesterPanel();
     return;
   }
-
   const m = location.hash.match(/^#pdf=(.+)$/);
   if (!m) return;
-
   const file = decodeURIComponent(m[1]);
   const found = all.find(x => x.file === file);
   if (found) showPdfPanel(found);
@@ -161,7 +183,6 @@ window.addEventListener("popstate", (ev) => {
   const st = ev.state;
   if (!st || st.page === "list") showList();
   else if (st.page === "pdf") {
-    // jeśli ktoś wróci do pdf state po historii
     const found = all.find(x => x.file === st.file);
     if (found) showPdfPanel(found);
     else showList();
@@ -172,6 +193,9 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./sw.js").catch(console.error);
 }
 
-// iOS: agresywny cache — bierz świeże pdfs.json na starcie
+// start: ustaw widoczność pierwszego widoku (fade in)
+viewList.classList.add("is-active");
+requestAnimationFrame(() => viewList.classList.add("is-visible"));
+
 history.replaceState({ page: "list" }, "", location.pathname + location.search);
 loadList({ bypassCache: true });
