@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#111827" />
+  <title>Biblioteka PDF</title>
+
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Biblioteka PDF</h1>
+    <p class="subtitle">PDF-y z repo GitHub • dodaj na ekran główny</p>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <div class="row">
+        <input id="q" type="search" placeholder="Szukaj po tytule..." />
+        <button id="reload" type="button" title="Odśwież listę">Odśwież</button>
+      </div>
+
+      <div id="meta" class="muted"></div>
+      <ul id="list" class="list"></ul>
+      <div id="status" class="muted"></div>
+    </section>
+
+    <section class="card small">
+      <h2>Jak dodać PDF</h2>
+      <ol>
+        <li>Wrzuć plik do folderu <code>pdfs/</code> w repo.</li>
+        <li>Dopisz go w <code>pdfs.json</code>.</li>
+        <li>Commit → gotowe (na każdym urządzeniu pojawi się automatycznie).</li>
+      </ol>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
