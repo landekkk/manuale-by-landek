@@ -103,3 +103,23 @@ button{
 .muted{ color: var(--muted); margin-top: 10px; }
 .small{ color: var(--muted); }
 code{ color: #d1d5db; }
+.linkbtn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.04);
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.pdf-frame{
+  width: 100%;
+  height: 72vh;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(0,0,0,.2);
+}
