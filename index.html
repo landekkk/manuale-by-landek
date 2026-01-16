@@ -1,64 +1,82 @@
-diff --git a/index.html b/index.html
-index 50aa6f606a71263d755248d4262a25025b69b550..86bb8935cdcfb4bea348f17e9d1f730158168559 100644
---- a/index.html
-+++ b/index.html
-@@ -17,59 +17,52 @@
- <body>
-   <header class="topbar">
-     <h1>manuale by Landek</h1>
-   </header>
- 
-   <main class="container">
-     <!-- Widok listy -->
-     <section class="card" id="view-list">
-       <div class="row">
-         <input id="q" type="search" placeholder="Szukaj po tytule..." />
-         <button id="reload" type="button" title="Odśwież listę">Odśwież</button>
-       </div>
- 
-       <div id="meta" class="muted"></div>
-       <ul id="list" class="list"></ul>
-       <div id="status" class="muted"></div>
-     </section>
- 
-     <!-- Panel PDF (otwierasz PDF dopiero po kliknięciu przycisku) -->
-     <section class="card" id="view-pdf" style="display:none;">
-       <div class="row wrap">
-         <button id="back" type="button">← Wstecz</button>
- 
-         <!-- GŁÓWNY: otwiera PDF w tej samej karcie (żeby działało cofanie) -->
-         <a id="openHere" class="linkbtn" href="#">Otwórz</a>
--
--        <!-- Opcja: nowa karta -->
--        <a id="openNew" class="linkbtn" href="#" target="_blank" rel="noopener">Otwórz w nowej karcie</a>
--
--        <!-- iOS często zachowuje się jak „Otwórz”, ale zostawiamy -->
--        <a id="download" class="linkbtn" href="#" download>Pobierz</a>
-       </div>
- 
-       <div class="muted" id="pdfTitle"></div>
- 
-       <div class="muted small" style="margin-top:10px;">
-         Najlepszy podgląd PDF na iOS działa w systemowym viewerze Safari.
-       </div>
-     </section>
- 
-     <!-- Tester dymków (kafelek pod PDF-ami) -->
-     <section class="card">
-       <div class="tools">
-         <div>
-           <div class="tool-title">Tester dymków</div>
-           <div class="muted small">Otwórz aplikację testera</div>
-         </div>
- 
-         <a class="linkbtn" href="https://landekkk.github.io/tester-dymkow-pwa/" target="_blank" rel="noopener">
-           Uruchom
-         </a>
-       </div>
-     </section>
-   </main>
- 
-   <script src="./app.js"></script>
- </body>
- </html>
--
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#111827" />
+  <meta name="description" content="manuale by Landek — biblioteka PDF." />
+
+  <title>manuale by Landek</title>
+
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>manuale by Landek</h1>
+  </header>
+
+  <main class="container">
+    <!-- Widok listy -->
+    <section class="card" id="view-list">
+      <div class="row">
+        <input id="q" type="search" placeholder="Szukaj po tytule..." />
+        <button id="reload" type="button" title="Odśwież listę">Odśwież</button>
+      </div>
+
+      <div id="meta" class="muted"></div>
+      <ul id="list" class="list"></ul>
+      <div id="status" class="muted"></div>
+
+      <!-- Kafel pod listą PDF -->
+      <div class="tool-card" id="openTester" role="button" tabindex="0">
+        <div>
+          <div class="tool-title">Tester dymków</div>
+          <div class="muted small">Otwórz w tej samej aplikacji</div>
+        </div>
+        <span class="chev">→</span>
+      </div>
+    </section>
+
+    <!-- Panel PDF -->
+    <section class="card" id="view-pdf" style="display:none;">
+      <div class="row">
+        <button id="backPdf" type="button">← Wstecz</button>
+        <a id="openHere" class="linkbtn" href="#">Otwórz</a>
+      </div>
+
+      <div class="muted" id="pdfTitle"></div>
+
+      <div class="muted small" style="margin-top:10px;">
+        PDF otworzy się w systemowym podglądzie Safari (najlepiej działa na iOS).
+      </div>
+    </section>
+
+    <!-- Widok testera (w tej samej aplikacji) -->
+    <section class="card" id="view-tester" style="display:none;">
+      <div class="row">
+        <button id="backTester" type="button">← Wstecz</button>
+      </div>
+
+      <div class="muted" style="margin-bottom:10px;">Tester dymków</div>
+
+      <iframe
+        id="testerFrame"
+        class="web-frame"
+        title="Tester dymków"
+        loading="lazy"
+        referrerpolicy="no-referrer"
+      ></iframe>
+
+      <div class="muted small" style="margin-top:10px;">
+        Jeśli coś się nie ładuje, daj znać — dopasujemy tryb otwierania pod iOS.
+      </div>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
