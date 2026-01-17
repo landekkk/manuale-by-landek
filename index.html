@@ -13,6 +13,9 @@
   <link rel="apple-touch-icon" href="./icons/icon-192.png" />
 
   <link rel="stylesheet" href="./styles.css" />
+
+  <!-- PDF.js (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.js"></script>
 </head>
 <body>
   <header class="topbar">
@@ -54,21 +57,34 @@
       </div>
     </section>
 
-    <!-- PDF VIEW (w apce) -->
-    <section class="card view pdf-card" id="view-pdf" aria-hidden="true">
-      <div class="pdf-topbar">
-        <button id="backPdf" type="button" class="pressable">← Wstecz</button>
-        <div class="pdf-title" id="pdfTitle"></div>
+    <!-- PDF VIEW (PDF.js) -->
+    <section class="card view pdfjs-card" id="view-pdf" aria-hidden="true">
+      <div class="pdfjs-topbar">
+        <button id="backPdf" type="button" class="pressable">←</button>
+
+        <div class="pdfjs-title" id="pdfTitle">PDF</div>
+
+        <div class="pdfjs-spacer"></div>
+
+        <button id="prevPage" type="button" class="pressable pdfjs-btn">‹</button>
+        <div class="pdfjs-pageinfo">
+          <span id="pageNow">1</span>
+          <span class="muted">/</span>
+          <span id="pageTotal">1</span>
+        </div>
+        <button id="nextPage" type="button" class="pressable pdfjs-btn">›</button>
+
+        <button id="zoomOut" type="button" class="pressable pdfjs-btn">−</button>
+        <button id="zoomIn" type="button" class="pressable pdfjs-btn">+</button>
       </div>
 
-      <!-- Podgląd PDF w aplikacji -->
-      <iframe
-        id="pdfFrame"
-        class="pdf-frame"
-        title="Podgląd PDF"
-        loading="eager"
-        allow="fullscreen"
-      ></iframe>
+      <div class="pdfjs-stage">
+        <div class="pdfjs-canvasWrap">
+          <canvas id="pdfCanvas"></canvas>
+        </div>
+      </div>
+
+      <div class="pdfjs-thumbs" id="thumbStrip" aria-label="Miniaturki stron"></div>
     </section>
 
     <!-- TESTER -->
