@@ -8,7 +8,6 @@
 }
 
 *{ box-sizing:border-box; }
-
 html, body { height: 100%; }
 
 body{
@@ -19,7 +18,7 @@ body{
   overflow-x: hidden;
 }
 
-/* Jednolite, „premium” tło + wiatraki (SVG) jako fixed overlay */
+/* Jednolite tło + wiatraki */
 body::before{
   content:"";
   position: fixed;
@@ -39,12 +38,10 @@ body::after{
   inset: 0;
   z-index: -1;
   opacity: .22;
-  filter: blur(0px);
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;
-  /* SVG z wiatrakami (nie kafelkuje) */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='900' viewBox='0 0 1600 900'%3E%3Cdefs%3E%3CradialGradient id='g' cx='50%25' cy='0%25' r='80%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='.10'/%3E%3Cstop offset='100%25' stop-color='%23000000' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='1600' height='900' fill='url(%23g)'/%3E%3Cg stroke='%23ffffff' stroke-opacity='.22' stroke-linecap='round'%3E%3C!-- turbine 1 --%3E%3Cpath d='M250 250 L250 820' stroke-width='6'/%3E%3Ccircle cx='250' cy='250' r='8' fill='%23ffffff' fill-opacity='.22'/%3E%3Cpath d='M250 250 L330 220' stroke-width='6'/%3E%3Cpath d='M250 250 L210 330' stroke-width='6'/%3E%3Cpath d='M250 250 L190 210' stroke-width='6'/%3E%3C!-- turbine 2 --%3E%3Cpath d='M820 290 L820 860' stroke-width='6'/%3E%3Ccircle cx='820' cy='290' r='8' fill='%23ffffff' fill-opacity='.22'/%3E%3Cpath d='M820 290 L905 265' stroke-width='6'/%3E%3Cpath d='M820 290 L780 375' stroke-width='6'/%3E%3Cpath d='M820 290 L750 255' stroke-width='6'/%3E%3C!-- turbine 3 --%3E%3Cpath d='M1310 260 L1310 850' stroke-width='6'/%3E%3Ccircle cx='1310' cy='260' r='8' fill='%23ffffff' fill-opacity='.22'/%3E%3Cpath d='M1310 260 L1395 235' stroke-width='6'/%3E%3Cpath d='M1310 260 L1270 345' stroke-width='6'/%3E%3Cpath d='M1310 260 L1240 225' stroke-width='6'/%3E%3C/g%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='900' viewBox='0 0 1600 900'%3E%3Cdefs%3E%3CradialGradient id='g' cx='50%25' cy='0%25' r='80%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='.10'/%3E%3Cstop offset='100%25' stop-color='%23000000' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='1600' height='900' fill='url(%23g)'/%3E%3Cg stroke='%23ffffff' stroke-opacity='.22' stroke-linecap='round'%3E%3Cpath d='M250 250 L250 820' stroke-width='6'/%3E%3Ccircle cx='250' cy='250' r='8' fill='%23ffffff' fill-opacity='.22'/%3E%3Cpath d='M250 250 L330 220' stroke-width='6'/%3E%3Cpath d='M250 250 L210 330' stroke-width='6'/%3E%3Cpath d='M250 250 L190 210' stroke-width='6'/%3E%3Cpath d='M820 290 L820 860' stroke-width='6'/%3E%3Ccircle cx='820' cy='290' r='8' fill='%23ffffff' fill-opacity='.22'/%3E%3Cpath d='M820 290 L905 265' stroke-width='6'/%3E%3Cpath d='M820 290 L780 375' stroke-width='6'/%3E%3Cpath d='M820 290 L750 255' stroke-width='6'/%3E%3Cpath d='M1310 260 L1310 850' stroke-width='6'/%3E%3Ccircle cx='1310' cy='260' r='8' fill='%23ffffff' fill-opacity='.22'/%3E%3Cpath d='M1310 260 L1395 235' stroke-width='6'/%3E%3Cpath d='M1310 260 L1270 345' stroke-width='6'/%3E%3Cpath d='M1310 260 L1240 225' stroke-width='6'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 .topbar{
@@ -104,7 +101,7 @@ body::after{
   backdrop-filter: blur(10px);
 }
 
-/* Widoki + animacje (fade/slide) */
+/* Widoki (fade/slide) */
 .view{
   display: none;
   opacity: 0;
@@ -112,15 +109,9 @@ body::after{
   transition: opacity 220ms ease, transform 220ms ease;
   will-change: opacity, transform;
 }
-.view.is-active{
-  display: block;
-}
-.view.is-visible{
-  opacity: 1;
-  transform: translateY(0);
-}
+.view.is-active{ display: block; }
+.view.is-visible{ opacity: 1; transform: translateY(0); }
 
-/* Formularz */
 .row{
   display:flex;
   gap:10px;
@@ -136,11 +127,8 @@ input{
   color: var(--text);
   outline: none;
 }
-input:focus{
-  border-color: rgba(34,197,94,.55);
-}
+input:focus{ border-color: rgba(34,197,94,.55); }
 
-/* Przycisk */
 button{
   border: 1px solid rgba(34,197,94,.45);
   background: rgba(34,197,94,.16);
@@ -150,7 +138,6 @@ button{
   font-weight: 700;
 }
 
-/* Lista */
 .list{
   list-style:none;
   margin: 10px 0 0;
@@ -189,23 +176,7 @@ button{
   padding: 6px 10px;
 }
 
-/* Link-button */
-.linkbtn{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(255,255,255,.04);
-  color: var(--text);
-  text-decoration: none;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
 .muted{ color: var(--muted); margin-top: 10px; }
-.small{ color: var(--muted); }
 
 /* Kafelek testera */
 .tool-card{
@@ -235,26 +206,58 @@ button{
   font-weight: 900;
 }
 
-/* Press effect (kafelki i przyciski) */
+/* Press effect */
 .pressable{
   transition: transform 120ms ease, filter 120ms ease;
   will-change: transform;
 }
-.pressable:active{
-  transform: scale(var(--press));
+.pressable:active{ transform: scale(var(--press)); }
+.item:active{ transform: scale(var(--press)); }
+button:active{ transform: scale(var(--press)); }
+
+/* PDF: prawie full screen, topbar u góry, ramka */
+.pdf-card{
+  padding: 0; /* pozwala rozciągnąć PDF do krawędzi karty */
+  overflow: hidden;
 }
-.item:active{
-  transform: scale(var(--press));
+
+.pdf-topbar{
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px;
+  background: rgba(17,24,39,.92);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(10px);
 }
-button:active{
-  transform: scale(var(--press));
+
+.pdf-title{
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.2;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* iframe wypełnia praktycznie cały ekran (minus topbar) */
+.pdf-frame{
+  width: calc(100% - 16px);
+  height: calc(100vh - 170px); /* dopasowane pod nagłówek + paddingi */
+  margin: 8px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 14px;
+  background: rgba(0,0,0,.18);
 }
 
 /* Wbudowana strona */
 .web-frame{
   width: 100%;
   height: 78vh;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255,255,255,.12);
   border-radius: 14px;
   background: rgba(0,0,0,.18);
 }
