@@ -1,12 +1,12 @@
-// app.js — manuale by Landek (PDF.js viewer na iOS + animacje)
+// app.js — manuale by Landek (ODPORNE: app nie pada gdy PDF.js nie dojdzie)
 
 const TESTER_URL = "https://landekkk.github.io/tester-dymkow-pwa/";
 
-// PDF.js setup
-const pdfjsLib = window["pdfjs-dist/build/pdf"];
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.js";
+// CDN PDF.js (lazy load dopiero przy otwieraniu PDF)
+const PDFJS_LIB_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.js";
+const PDFJS_WORKER_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.js";
 
+// UI
 const listEl = document.getElementById("list");
 const qEl = document.getElementById("q");
 const metaEl = document.getElementById("meta");
@@ -38,13 +38,13 @@ let all = [];
 let activeView = viewList;
 
 // PDF state
+let pdfjsLib = null;
 let pdfDoc = null;
 let pageNum = 1;
-let zoom = 1;        // user zoom factor
-let baseScale = 1;   // fit-to-width base
+let zoom = 1;
+let baseScale = 1;
 let rendering = false;
 let pendingPage = null;
-let currentFile = null;
 
 function setStatus(msg) {
   statusEl.textContent = msg || "";
@@ -93,8 +93,38 @@ function showTesterPanel() {
   history.pushState({ page: "tester" }, "", "#tester");
 }
 
-/* ===== PDF.js rendering ===== */
+/* ===== Lazy load PDF.js ===== */
+function loadScript(url) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = url;
+    s.async = true;
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
 
+async function ensurePdfJs() {
+  if (pdfjsLib) return pdfjsLib;
+
+  // jeśli już załadowane globalnie
+  const maybe = window["pdfjs-dist/build/pdf"];
+  if (maybe) {
+    pdfjsLib = maybe;
+  } else {
+    // doładuj z CDN
+    await loadScript(PDFJS_LIB_URL);
+    pdfjsLib = window["pdfjs-dist/build/pdf"];
+  }
+
+  if (!pdfjsLib) throw new Error("PDF.js not available");
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
+  return pdfjsLib;
+}
+
+/* ===== PDF.js rendering ===== */
 function updateControls() {
   if (!pdfDoc) return;
   pageNowEl.textContent = String(pageNum);
@@ -104,8 +134,7 @@ function updateControls() {
 }
 
 function getFitScale(viewportWidth, pageViewportWidth) {
-  const padding = 0; // canvasWrap już ma padding w stage
-  const usable = Math.max(320, viewportWidth - padding);
+  const usable = Math.max(320, viewportWidth);
   return usable / pageViewportWidth;
 }
 
@@ -117,11 +146,8 @@ async function renderPage(num) {
   updateControls();
 
   const page = await pdfDoc.getPage(num);
-
-  // Fit-to-width + user zoom
   const unscaled = page.getViewport({ scale: 1 });
 
-  // szerokość wrappera = szerokość canvas w CSS (100% parenta)
   const wrap = pdfCanvas.parentElement;
   const wrapWidth = wrap.clientWidth || 360;
 
@@ -131,15 +157,11 @@ async function renderPage(num) {
   const viewport = page.getViewport({ scale });
 
   const ctx = pdfCanvas.getContext("2d", { alpha: false });
-
-  // ustaw rozdzielczość canvas
   pdfCanvas.width = Math.floor(viewport.width);
   pdfCanvas.height = Math.floor(viewport.height);
 
-  // rysuj
   await page.render({ canvasContext: ctx, viewport }).promise;
 
-  // zaznacz aktywną miniaturkę
   [...thumbStrip.querySelectorAll(".thumb")].forEach(el => {
     el.classList.toggle("is-active", Number(el.dataset.page) === pageNum);
   });
@@ -162,9 +184,7 @@ async function buildThumbnails() {
   thumbStrip.innerHTML = "";
   if (!pdfDoc) return;
 
-  const total = pdfDoc.numPages;
-
-  for (let i = 1; i <= total; i++) {
+  for (let i = 1; i <= pdfDoc.numPages; i++) {
     const thumb = document.createElement("div");
     thumb.className = "thumb";
     thumb.dataset.page = String(i);
@@ -173,14 +193,12 @@ async function buildThumbnails() {
     thumb.appendChild(c);
     thumbStrip.appendChild(thumb);
 
-    // Click -> go to page
     thumb.addEventListener("click", () => queueRenderPage(i));
 
-    // render thumbnail
     const page = await pdfDoc.getPage(i);
     const vp1 = page.getViewport({ scale: 1 });
 
-    const targetW = 96; // CSS width
+    const targetW = 96;
     const scale = targetW / vp1.width;
     const vp = page.getViewport({ scale });
 
@@ -193,22 +211,18 @@ async function buildThumbnails() {
 }
 
 async function openPdfInApp(file, title) {
-  currentFile = file;
   pdfTitleEl.textContent = title || "PDF";
-
-  // reset state
-  pdfDoc = null;
   pageNum = 1;
   zoom = 1;
   pendingPage = null;
   thumbStrip.innerHTML = "";
+  pdfDoc = null;
 
   switchView(viewPdf);
 
   try {
-    // important: cache-bust w iOS czasem pomaga, ale tylko dla listy — PDFy mogą być duże,
-    // więc tu nie dokładamy ?t=... (zostawiamy czyste URL)
-    const loadingTask = pdfjsLib.getDocument({ url: file });
+    const lib = await ensurePdfJs();
+    const loadingTask = lib.getDocument({ url: file });
     pdfDoc = await loadingTask.promise;
 
     pageTotalEl.textContent = String(pdfDoc.numPages);
@@ -218,13 +232,14 @@ async function openPdfInApp(file, title) {
     history.pushState({ page: "pdf", file }, "", `#pdf=${encodeURIComponent(file)}`);
   } catch (e) {
     console.error(e);
-    alert("Nie udało się otworzyć PDF. Jeśli problem wraca, sprawdź nazwę pliku i ścieżkę.");
+    // Fallback: nie psujemy apki — otwieramy PDF systemowo
+    window.open(file, "_blank");
+    // wróć do listy (żeby user nie utknął w pustym viewerze)
     showList();
   }
 }
 
 /* ===== Lista PDF ===== */
-
 function renderList() {
   const q = normalize(qEl.value);
   const filtered = all.filter(x => normalize(x.title).includes(q));
@@ -290,7 +305,6 @@ function restoreFromHash() {
     showTesterPanel();
     return;
   }
-
   const m = location.hash.match(/^#pdf=(.+)$/);
   if (!m) return;
 
@@ -300,7 +314,6 @@ function restoreFromHash() {
 }
 
 /* ===== Events ===== */
-
 qEl.addEventListener("input", renderList);
 reloadBtn.addEventListener("click", () => loadList({ bypassCache: true }));
 
@@ -312,20 +325,19 @@ openTesterCard.addEventListener("keydown", (e) => {
   if (e.key === "Enter" || e.key === " ") showTesterPanel();
 });
 
-// PDF controls
+// PDF controls (bez crashy, nawet jeśli PDF jeszcze nie otwarty)
 prevPageBtn.addEventListener("click", () => queueRenderPage(Math.max(1, pageNum - 1)));
 nextPageBtn.addEventListener("click", () => queueRenderPage(Math.min(pdfDoc?.numPages || 1, pageNum + 1)));
 
 zoomInBtn.addEventListener("click", () => {
   zoom = Math.min(3, Number((zoom + 0.15).toFixed(2)));
-  queueRenderPage(pageNum);
+  if (pdfDoc) queueRenderPage(pageNum);
 });
 zoomOutBtn.addEventListener("click", () => {
   zoom = Math.max(0.6, Number((zoom - 0.15).toFixed(2)));
-  queueRenderPage(pageNum);
+  if (pdfDoc) queueRenderPage(pageNum);
 });
 
-// Re-render on orientation change / resize (fit width)
 window.addEventListener("resize", () => {
   if (activeView === viewPdf && pdfDoc) queueRenderPage(pageNum);
 });
