@@ -1,19 +1,16 @@
 (() => {
   const TESTER_URL = "https://landekkk.github.io/tester-dymkow-pwa/";
 
-  // ===== Helpers =====
-  const $ = (id) => document.getElementById(id);
+  // PDF.js (lazy)
+  const PDFJS_LIB_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.js";
+  const PDFJS_WORKER_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.js";
 
-  function setText(el, txt) {
-    if (el) el.textContent = txt ?? "";
-  }
+  const $ = (id) => document.getElementById(id);
+  function setText(el, txt) { if (el) el.textContent = txt ?? ""; }
 
   const statusEl = $("status");
-  function setStatus(msg) {
-    setText(statusEl, msg || "");
-  }
+  function setStatus(msg) { setText(statusEl, msg || ""); }
 
-  // Pokaż błędy na ekranie (żeby nie było “ciszy”)
   window.addEventListener("error", (e) => {
     setStatus("Błąd aplikacji: " + (e?.message || "unknown"));
   });
@@ -21,7 +18,7 @@
     setStatus("Błąd aplikacji: " + (e?.reason?.message || String(e?.reason || "unknown")));
   });
 
-  // ===== Elements (mogą być null – obsługujemy) =====
+  // ===== Elements =====
   const listEl = $("list");
   const qEl = $("q");
   const metaEl = $("meta");
@@ -48,13 +45,12 @@
   const openTesterCard = $("openTester");
   const testerFrame = $("testerFrame");
 
-  // Jeżeli kluczowe elementy listy nie istnieją — pokaż błąd od razu
   if (!listEl || !qEl || !metaEl || !reloadBtn || !viewList) {
     setStatus("Brakuje elementów w index.html (list/q/meta/reload/view-list).");
     return;
   }
 
-  // ===== View switching (fade/slide) =====
+  // ===== Views (fade/slide) =====
   let activeView = viewList;
 
   function setAriaHidden(el, hidden) {
@@ -91,7 +87,6 @@
   }
 
   function showTesterPanel() {
-    // jeśli nie mamy iframe albo view-tester, to fallback: otwórz w nowej karcie
     if (!viewTester || !testerFrame) {
       window.open(TESTER_URL, "_blank");
       return;
@@ -101,12 +96,170 @@
     history.pushState({ page: "tester" }, "", "#tester");
   }
 
-  // ===== Load pdfs.json (to ma działać zawsze) =====
+  // ===== PDF.js lazy loader =====
+  let pdfjsLib = null;
+
+  function loadScript(url) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = url;
+      s.async = true;
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  async function ensurePdfJs() {
+    if (pdfjsLib) return pdfjsLib;
+
+    const maybe = window["pdfjs-dist/build/pdf"];
+    if (maybe) {
+      pdfjsLib = maybe;
+    } else {
+      await loadScript(PDFJS_LIB_URL);
+      pdfjsLib = window["pdfjs-dist/build/pdf"];
+    }
+
+    if (!pdfjsLib) throw new Error("PDF.js not available");
+    pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
+    return pdfjsLib;
+  }
+
+  // ===== PDF state =====
+  let pdfDoc = null;
+  let pageNum = 1;
+  let zoom = 1;
+  let baseScale = 1;
+  let rendering = false;
+  let pendingPage = null;
+
+  function updateControls() {
+    if (!pageNowEl || !pageTotalEl) return;
+    pageNowEl.textContent = String(pageNum);
+    pageTotalEl.textContent = String(pdfDoc?.numPages || 1);
+
+    if (prevPageBtn) prevPageBtn.disabled = pageNum <= 1;
+    if (nextPageBtn) nextPageBtn.disabled = pageNum >= (pdfDoc?.numPages || 1);
+  }
+
+  function getFitScale(wrapWidth, pageW) {
+    const usable = Math.max(320, wrapWidth);
+    return usable / pageW;
+  }
+
+  async function renderPage(num) {
+    if (!pdfDoc || !pdfCanvas) return;
+
+    rendering = true;
+    pageNum = num;
+    updateControls();
+
+    const page = await pdfDoc.getPage(num);
+    const unscaled = page.getViewport({ scale: 1 });
+
+    const wrap = pdfCanvas.parentElement;
+    const wrapWidth = wrap?.clientWidth || 360;
+
+    baseScale = getFitScale(wrapWidth, unscaled.width);
+    const scale = baseScale * zoom;
+
+    const viewport = page.getViewport({ scale });
+
+    const ctx = pdfCanvas.getContext("2d", { alpha: false });
+    pdfCanvas.width = Math.floor(viewport.width);
+    pdfCanvas.height = Math.floor(viewport.height);
+
+    await page.render({ canvasContext: ctx, viewport }).promise;
+
+    if (thumbStrip) {
+      [...thumbStrip.querySelectorAll(".thumb")].forEach(el => {
+        el.classList.toggle("is-active", Number(el.dataset.page) === pageNum);
+      });
+    }
+
+    rendering = false;
+
+    if (pendingPage !== null) {
+      const p = pendingPage;
+      pendingPage = null;
+      renderPage(p);
+    }
+  }
+
+  function queueRenderPage(num) {
+    if (rendering) pendingPage = num;
+    else renderPage(num);
+  }
+
+  async function buildThumbnails() {
+    if (!thumbStrip || !pdfDoc) return;
+    thumbStrip.innerHTML = "";
+
+    for (let i = 1; i <= pdfDoc.numPages; i++) {
+      const thumb = document.createElement("div");
+      thumb.className = "thumb";
+      thumb.dataset.page = String(i);
+
+      const c = document.createElement("canvas");
+      thumb.appendChild(c);
+      thumbStrip.appendChild(thumb);
+
+      thumb.addEventListener("click", () => queueRenderPage(i));
+
+      const page = await pdfDoc.getPage(i);
+      const vp1 = page.getViewport({ scale: 1 });
+
+      const targetW = 96;
+      const scale = targetW / vp1.width;
+      const vp = page.getViewport({ scale });
+
+      c.width = Math.floor(vp.width);
+      c.height = Math.floor(vp.height);
+
+      const tctx = c.getContext("2d", { alpha: false });
+      await page.render({ canvasContext: tctx, viewport: vp }).promise;
+    }
+  }
+
+  async function openPdfInApp(file, title) {
+    // Jeśli nie masz w index.html widoku PDF, fallback
+    if (!viewPdf || !pdfCanvas || !pdfTitleEl) {
+      window.open(file, "_blank");
+      return;
+    }
+
+    pdfTitleEl.textContent = title || "PDF";
+    pdfDoc = null;
+    pageNum = 1;
+    zoom = 1;
+    pendingPage = null;
+    if (thumbStrip) thumbStrip.innerHTML = "";
+
+    switchView(viewPdf);
+
+    try {
+      const lib = await ensurePdfJs();
+      const loadingTask = lib.getDocument({ url: file });
+      pdfDoc = await loadingTask.promise;
+
+      updateControls();
+      await buildThumbnails();
+      await renderPage(1);
+
+      history.pushState({ page: "pdf", file }, "", `#pdf=${encodeURIComponent(file)}`);
+    } catch (e) {
+      console.error(e);
+      // fallback: systemowy viewer
+      window.open(file, "_blank");
+      showList();
+    }
+  }
+
+  // ===== List =====
   let all = [];
 
-  function normalize(s) {
-    return (s || "").toLowerCase().trim();
-  }
+  function normalize(s) { return (s || "").toLowerCase().trim(); }
 
   function renderList() {
     const q = normalize(qEl.value);
@@ -131,11 +284,9 @@
       a.href = "#";
       a.textContent = item.title;
 
-      // Na razie: otwieramy PDF systemowo (żeby lista + tester na pewno działały).
-      // PDF.js dołożymy po ustabilizowaniu (w następnym kroku).
       a.addEventListener("click", (e) => {
         e.preventDefault();
-        window.open(item.file, "_blank");
+        openPdfInApp(item.file, item.title);
       });
 
       const badge = document.createElement("span");
@@ -162,6 +313,7 @@
 
       renderList();
       setStatus("");
+
       restoreFromHash();
     } catch (e) {
       console.error(e);
@@ -174,9 +326,14 @@
       showTesterPanel();
       return;
     }
+    const m = location.hash.match(/^#pdf=(.+)$/);
+    if (!m) return;
+    const file = decodeURIComponent(m[1]);
+    const found = all.find(x => x.file === file);
+    if (found) openPdfInApp(found.file, found.title);
   }
 
-  // ===== Events (bez ryzyka null crash) =====
+  // ===== Events =====
   qEl.addEventListener("input", renderList);
   reloadBtn.addEventListener("click", () => loadList({ bypassCache: true }));
 
@@ -190,10 +347,31 @@
     });
   }
 
+  if (prevPageBtn) prevPageBtn.addEventListener("click", () => queueRenderPage(Math.max(1, pageNum - 1)));
+  if (nextPageBtn) nextPageBtn.addEventListener("click", () => queueRenderPage(Math.min(pdfDoc?.numPages || 1, pageNum + 1)));
+
+  if (zoomInBtn) zoomInBtn.addEventListener("click", () => {
+    zoom = Math.min(3, Number((zoom + 0.15).toFixed(2)));
+    if (pdfDoc) queueRenderPage(pageNum);
+  });
+  if (zoomOutBtn) zoomOutBtn.addEventListener("click", () => {
+    zoom = Math.max(0.6, Number((zoom - 0.15).toFixed(2)));
+    if (pdfDoc) queueRenderPage(pageNum);
+  });
+
+  window.addEventListener("resize", () => {
+    if (activeView === viewPdf && pdfDoc) queueRenderPage(pageNum);
+  });
+
   window.addEventListener("popstate", (ev) => {
     const st = ev.state;
     if (!st || st.page === "list") showList();
     else if (st.page === "tester") showTesterPanel();
+    else if (st.page === "pdf") {
+      const found = all.find(x => x.file === st.file);
+      if (found) openPdfInApp(found.file, found.title);
+      else showList();
+    }
   });
 
   if ("serviceWorker" in navigator) {
@@ -201,7 +379,6 @@
   }
 
   // Start
-  setStatus("");
   history.replaceState({ page: "list" }, "", location.pathname + location.search);
   loadList({ bypassCache: true });
 })();
