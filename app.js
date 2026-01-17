@@ -50,7 +50,7 @@
     return;
   }
 
-  // ===== Views (fade/slide) =====
+  // ===== Views =====
   let activeView = viewList;
 
   function setAriaHidden(el, hidden) {
@@ -98,6 +98,7 @@
 
   // ===== PDF.js lazy loader =====
   let pdfjsLib = null;
+  let pdfjsLoading = null;
 
   function loadScript(url) {
     return new Promise((resolve, reject) => {
@@ -110,20 +111,37 @@
     });
   }
 
+  function getPdfjsGlobal() {
+    // CDN pdf.min.js najczęściej ustawia window.pdfjsLib
+    return window.pdfjsLib || window["pdfjsLib"] || window["pdfjs-dist/build/pdf"] || null;
+  }
+
   async function ensurePdfJs() {
     if (pdfjsLib) return pdfjsLib;
+    if (pdfjsLoading) return pdfjsLoading;
 
-    const maybe = window["pdfjs-dist/build/pdf"];
-    if (maybe) {
-      pdfjsLib = maybe;
-    } else {
-      await loadScript(PDFJS_LIB_URL);
-      pdfjsLib = window["pdfjs-dist/build/pdf"];
-    }
+    pdfjsLoading = (async () => {
+      const already = getPdfjsGlobal();
+      if (already) {
+        pdfjsLib = already;
+      } else {
+        await loadScript(PDFJS_LIB_URL);
+        pdfjsLib = getPdfjsGlobal();
+      }
 
-    if (!pdfjsLib) throw new Error("PDF.js not available");
-    pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
-    return pdfjsLib;
+      if (!pdfjsLib) throw new Error("PDF.js nie załadował się (brak globala).");
+
+      // worker
+      try {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
+      } catch (e) {
+        // niektóre buildy mają inną strukturę — ale zwykle będzie OK
+      }
+
+      return pdfjsLib;
+    })();
+
+    return pdfjsLoading;
   }
 
   // ===== PDF state =====
@@ -135,10 +153,8 @@
   let pendingPage = null;
 
   function updateControls() {
-    if (!pageNowEl || !pageTotalEl) return;
-    pageNowEl.textContent = String(pageNum);
-    pageTotalEl.textContent = String(pdfDoc?.numPages || 1);
-
+    if (pageNowEl) pageNowEl.textContent = String(pageNum);
+    if (pageTotalEl) pageTotalEl.textContent = String(pdfDoc?.numPages || 1);
     if (prevPageBtn) prevPageBtn.disabled = pageNum <= 1;
     if (nextPageBtn) nextPageBtn.disabled = pageNum >= (pdfDoc?.numPages || 1);
   }
@@ -165,8 +181,8 @@
     const scale = baseScale * zoom;
 
     const viewport = page.getViewport({ scale });
-
     const ctx = pdfCanvas.getContext("2d", { alpha: false });
+
     pdfCanvas.width = Math.floor(viewport.width);
     pdfCanvas.height = Math.floor(viewport.height);
 
@@ -223,13 +239,14 @@
   }
 
   async function openPdfInApp(file, title) {
-    // Jeśli nie masz w index.html widoku PDF, fallback
     if (!viewPdf || !pdfCanvas || !pdfTitleEl) {
       window.open(file, "_blank");
       return;
     }
 
+    setStatus(""); // czyścimy ewentualny błąd
     pdfTitleEl.textContent = title || "PDF";
+
     pdfDoc = null;
     pageNum = 1;
     zoom = 1;
@@ -240,6 +257,10 @@
 
     try {
       const lib = await ensurePdfJs();
+
+      // DEBUG: jeśli chcesz, w razie problemów zobaczysz to na ekranie
+      // setStatus("PDF.js OK — ładuję PDF…");
+
       const loadingTask = lib.getDocument({ url: file });
       pdfDoc = await loadingTask.promise;
 
@@ -250,7 +271,7 @@
       history.pushState({ page: "pdf", file }, "", `#pdf=${encodeURIComponent(file)}`);
     } catch (e) {
       console.error(e);
-      // fallback: systemowy viewer
+      setStatus("Nie udało się uruchomić podglądu PDF w aplikacji — otwieram w nowej karcie.");
       window.open(file, "_blank");
       showList();
     }
@@ -258,7 +279,6 @@
 
   // ===== List =====
   let all = [];
-
   function normalize(s) { return (s || "").toLowerCase().trim(); }
 
   function renderList() {
@@ -313,7 +333,6 @@
 
       renderList();
       setStatus("");
-
       restoreFromHash();
     } catch (e) {
       console.error(e);
@@ -328,6 +347,7 @@
     }
     const m = location.hash.match(/^#pdf=(.+)$/);
     if (!m) return;
+
     const file = decodeURIComponent(m[1]);
     const found = all.find(x => x.file === file);
     if (found) openPdfInApp(found.file, found.title);
