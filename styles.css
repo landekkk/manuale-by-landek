@@ -67,10 +67,7 @@ body::after{
   transform-origin: 48px 18px;
   animation: spin 2.6s linear infinite;
 }
-
-@keyframes spin{
-  to { transform: rotate(360deg); }
-}
+@keyframes spin{ to { transform: rotate(360deg); } }
 
 .topbar h1{
   margin:0;
@@ -138,6 +135,7 @@ button{
   font-weight: 700;
 }
 
+/* Lista */
 .list{
   list-style:none;
   margin: 10px 0 0;
@@ -146,7 +144,6 @@ button{
   flex-direction:column;
   gap: 8px;
 }
-
 .item{
   border: 1px solid var(--border);
   background: rgba(255,255,255,.03);
@@ -167,7 +164,6 @@ button{
   border-color: rgba(255,255,255,.16);
   background: rgba(255,255,255,.04);
 }
-
 .badge{
   color: var(--muted);
   font-size: 12px;
@@ -197,14 +193,8 @@ button{
   border-color: rgba(255,255,255,.16);
   background: rgba(255,255,255,.04);
 }
-.tool-title{
-  font-size: 16px;
-  font-weight: 850;
-}
-.chev{
-  color: var(--muted);
-  font-weight: 900;
-}
+.tool-title{ font-size: 16px; font-weight: 850; }
+.chev{ color: var(--muted); font-weight: 900; }
 
 /* Press effect */
 .pressable{
@@ -215,44 +205,6 @@ button{
 .item:active{ transform: scale(var(--press)); }
 button:active{ transform: scale(var(--press)); }
 
-/* PDF: prawie full screen, topbar u góry, ramka */
-.pdf-card{
-  padding: 0; /* pozwala rozciągnąć PDF do krawędzi karty */
-  overflow: hidden;
-}
-
-.pdf-topbar{
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 12px;
-  background: rgba(17,24,39,.92);
-  border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(10px);
-}
-
-.pdf-title{
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.2;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-/* iframe wypełnia praktycznie cały ekran (minus topbar) */
-.pdf-frame{
-  width: calc(100% - 16px);
-  height: calc(100vh - 170px); /* dopasowane pod nagłówek + paddingi */
-  margin: 8px;
-  border: 1px solid rgba(255,255,255,.12);
-  border-radius: 14px;
-  background: rgba(0,0,0,.18);
-}
-
 /* Wbudowana strona */
 .web-frame{
   width: 100%;
@@ -260,4 +212,90 @@ button:active{ transform: scale(var(--press)); }
   border: 1px solid rgba(255,255,255,.12);
   border-radius: 14px;
   background: rgba(0,0,0,.18);
+}
+
+/* ===== PDF.js viewer ===== */
+.pdfjs-card{
+  padding: 0;
+  overflow: hidden;
+}
+
+/* topbar jak “native viewer” */
+.pdfjs-topbar{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  padding: 12px 12px;
+  background: rgba(17,24,39,.92);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(10px);
+}
+.pdfjs-title{
+  font-weight: 750;
+  max-width: 52vw;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+.pdfjs-spacer{ flex: 1; }
+
+.pdfjs-btn{
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.04);
+}
+
+.pdfjs-pageinfo{
+  display:flex;
+  align-items:baseline;
+  gap:6px;
+  font-weight: 750;
+  padding: 0 2px;
+}
+
+/* stage (prawie full screen) */
+.pdfjs-stage{
+  padding: 10px;
+}
+.pdfjs-canvasWrap{
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 16px;
+  overflow: hidden;
+}
+#pdfCanvas{
+  width: 100%;
+  height: auto;
+  display:block;
+  background: #fff; /* PDF tło */
+}
+
+/* miniaturki */
+.pdfjs-thumbs{
+  display:flex;
+  gap: 10px;
+  padding: 10px 10px 12px;
+  border-top: 1px solid var(--border);
+  background: rgba(17,24,39,.88);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.thumb{
+  flex: 0 0 auto;
+  width: 96px;
+  border-radius: 12px;
+  border: 2px solid rgba(255,255,255,.10);
+  overflow:hidden;
+  background: rgba(0,0,0,.12);
+  cursor: pointer;
+}
+.thumb.is-active{
+  border-color: rgba(34,197,94,.55);
+}
+.thumb canvas{
+  width: 100%;
+  height: auto;
+  display:block;
+  background: #fff;
 }
