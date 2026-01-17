@@ -3,7 +3,6 @@
 
   // PDF.js (lazy)
   const PDFJS_LIB_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.js";
-  const PDFJS_WORKER_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.js";
 
   const $ = (id) => document.getElementById(id);
   function setText(el, txt) { if (el) el.textContent = txt ?? ""; }
@@ -88,7 +87,8 @@
 
   function showTesterPanel() {
     if (!viewTester || !testerFrame) {
-      window.open(TESTER_URL, "_blank");
+      // pewny fallback
+      location.href = TESTER_URL;
       return;
     }
     if (!testerFrame.src) testerFrame.src = TESTER_URL;
@@ -112,8 +112,8 @@
   }
 
   function getPdfjsGlobal() {
-    // CDN pdf.min.js najczęściej ustawia window.pdfjsLib
-    return window.pdfjsLib || window["pdfjsLib"] || window["pdfjs-dist/build/pdf"] || null;
+    // CDN build najczęściej daje window.pdfjsLib
+    return window.pdfjsLib || window["pdfjsLib"] || null;
   }
 
   async function ensurePdfJs() {
@@ -129,15 +129,7 @@
         pdfjsLib = getPdfjsGlobal();
       }
 
-      if (!pdfjsLib) throw new Error("PDF.js nie załadował się (brak globala).");
-
-      // worker
-      try {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
-      } catch (e) {
-        // niektóre buildy mają inną strukturę — ale zwykle będzie OK
-      }
-
+      if (!pdfjsLib) throw new Error("PDF.js nie załadował się (brak window.pdfjsLib).");
       return pdfjsLib;
     })();
 
@@ -239,12 +231,13 @@
   }
 
   async function openPdfInApp(file, title) {
+    // jeśli nie ma viewer-a, pewny fallback
     if (!viewPdf || !pdfCanvas || !pdfTitleEl) {
-      window.open(file, "_blank");
+      location.href = file;
       return;
     }
 
-    setStatus(""); // czyścimy ewentualny błąd
+    setStatus("Ładuję PDF…");
     pdfTitleEl.textContent = title || "PDF";
 
     pdfDoc = null;
@@ -258,12 +251,15 @@
     try {
       const lib = await ensurePdfJs();
 
-      // DEBUG: jeśli chcesz, w razie problemów zobaczysz to na ekranie
-      // setStatus("PDF.js OK — ładuję PDF…");
+      // 🔥 KLUCZ: iOS/PWA często ma problem z workerem → wyłączamy
+      const loadingTask = lib.getDocument({
+        url: file,
+        disableWorker: true
+      });
 
-      const loadingTask = lib.getDocument({ url: file });
       pdfDoc = await loadingTask.promise;
 
+      setStatus("");
       updateControls();
       await buildThumbnails();
       await renderPage(1);
@@ -271,9 +267,13 @@
       history.pushState({ page: "pdf", file }, "", `#pdf=${encodeURIComponent(file)}`);
     } catch (e) {
       console.error(e);
-      setStatus("Nie udało się uruchomić podglądu PDF w aplikacji — otwieram w nowej karcie.");
-      window.open(file, "_blank");
-      showList();
+
+      // pokaż krótki powód
+      const msg = (e && e.message) ? e.message : String(e);
+      setStatus("PDF viewer error: " + msg);
+
+      // ✅ PEWNY fallback na iOS: przejście w tej samej karcie
+      location.href = file;
     }
   }
 
@@ -304,8 +304,8 @@
       a.href = "#";
       a.textContent = item.title;
 
-      a.addEventListener("click", (e) => {
-        e.preventDefault();
+      a.addEventListener("click", (ev) => {
+        ev.preventDefault();
         openPdfInApp(item.file, item.title);
       });
 
